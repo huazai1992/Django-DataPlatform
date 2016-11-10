@@ -337,7 +337,7 @@ def showResult(request):
         if request.method == 'GET':
             mission = Mission.objects.get(missionName=request.GET['taskName'])
             # print req
-            resultPath = mission.resultfile_set.get(resultName=request.GET['resultName']).resultPath
+            resultPath = mission.resultfile_set.get(resultName=request.GET['label']).resultPath
             resultdata = readFile(resultPath)
 
             dict = resultdata
@@ -357,13 +357,79 @@ def showResult(request):
 
 @csrf_exempt
 def receive(request):
+    jarPath = "/home/spark/JAR/"
     if request.method == "POST":
         ag = Algorithm(request.POST, request.FILES)
         if ag.is_valid():
-            algorithm_name = ag.cleaned_data['username']
-            algorithm_text = ag.cleaned_data['algorithm_text']
-            a=Algorithm(algorithm_name=algorithm_name,algorithm_text=algorithm_text)
+            ags = Algorithm.objects.all()
+            id = []
+            for i in ags:
+                id.append(int(i.algorithmID))
+            algorithm_id = str(max(id) + 1)
+            algorithm_name = ag.cleaned_data['algorithmName']
+            algorithm_tags = ag.cleaned_data['tags']
+            algorithm_jarPath = jarPath + ag.cleaned_data['jarName']
+            algorithm_className = ag.cleaned_data['className']
+            algorithm_inputNumber = ag.cleaned_data['inputNumber']
+            algorithm_outputNumber = ag.cleaned_data['outputNumber']
+            algorithm_inputSort = ag.cleaned_data['inputSort']
+            algorithm_text = ag.cleaned_data['description']
+            a=Algorithm(algorithm_name=algorithm_name, algorithmID=algorithm_id, tags=algorithm_tags, description=algorithm_text,
+                        className=algorithm_className, jarPath=algorithm_jarPath, inputNumber=algorithm_inputNumber,
+                        outputNumber=algorithm_outputNumber, inputSort=algorithm_inputSort)
             a.save()
             return HttpResponse('upload ok!')
         return HttpResponse("algorithm_name is invalid")
     return HttpResponse("error")
+
+
+def diaplay(request):
+    dict = {}
+    info = 'OK'
+    try:
+        if request.method == 'GET':
+            missionName=request.GET['taskName']
+            mission= Mission.objects.get(missionName=missionName)
+            missionOwner =mission.missionOwner
+            missionStartDate = mission.missionStartDate
+            missionEndDate = mission.missionEndDate
+            missionStatus = mission.missionStatus
+            dict["missionName"] = missionName
+            dict["missionOwner"] = missionOwner
+            dict["missionStartDate"] = missionStartDate
+            dict["missionEndDate"] = missionEndDate
+            dict["missionStatus"] = missionStatus
+    except:
+        import sys
+        info = "%s || %s" % (sys.exc_info()[0], sys.exc_info()[1])
+    dict["message"] = info
+    dict["createTime"] = str(time.ctime())
+    response = HttpResponse(json.dumps(dict), content_type="application/json")
+    response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Methods"] = "POST,GET"
+    response["Access-Control-Max-Age"] = "1000"
+    response["Access-Control-Allow-Headers"] = "*"
+    return response
+
+def recovery(request):
+    dict = {}
+    info = 'OK'
+    try:
+        if request.method == 'GET':
+            missionName = request.GET['taskName']
+            missionFlowPath=Mission.objects.get(missionName=missionName).missionFlowPath
+            file=open(missionFlowPath,'r')
+            content=file.readline()
+            dict=json.loads(content)
+            file.close()
+    except:
+        import sys
+        info = "%s || %s" % (sys.exc_info()[0], sys.exc_info()[1])
+    dict["message"] = info
+    dict["createTime"] = str(time.ctime())
+    response = HttpResponse(json.dumps(dict), content_type="application/json")
+    response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Methods"] = "POST,GET"
+    response["Access-Control-Max-Age"] = "1000"
+    response["Access-Control-Allow-Headers"] = "*"
+    return response
