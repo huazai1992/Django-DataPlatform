@@ -22,5 +22,7 @@ urlpatterns = [
     url(r'^submit/$', views.scheduler),
     url(r'^updateMysql/$', views.updateParaToMysql),
     url(r'^sendinformation/$', views.sendSparkInformation),
-    url(r'^processinformation/$', views.processInformation)
+    url(r'^processinformation/$', views.processInformation),
+    url(r'^sendresultinformation/$', views.sendResultInformation),
+    url(r'^visualization/$', views.showResult)
 ]

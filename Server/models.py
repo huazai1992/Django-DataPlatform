@@ -35,7 +35,9 @@ class file(models.Model):
 class Mission(models.Model):
     missionName = models.CharField(max_length=50)
     missionOwner = models.CharField(max_length=50)
-    missionDate = models.DateTimeField(default=None)
+    missionStartDate = models.DateTimeField(default=None)
+    missionEndDate = models.DateTimeField(default=None)
+    missionFlowPath = models.CharField(max_length=100)
     missionStatus = models.IntegerField(default=0)
 
 class ResultFile(models.Model):

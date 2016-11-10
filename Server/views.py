@@ -6,6 +6,7 @@ from Scheduler.spark import Spark_Scheduler
 from Scheduler.monitor import SparkMonitor
 from Server.models import Algorithm, AlgorithmParameters, file, Mission, ResultFile
 from datetime import datetime
+from Scheduler.convert import readFile
 
 
 from django.views.decorators.csrf import csrf_exempt
@@ -32,9 +33,15 @@ def scheduler(request):
         if request.method == 'POST':
             body = json.loads(request.body)
             req = byteify(body)
-            mission = Mission(missionName=req["taskName"], missionOwner="zhu", missionDate=datetime.now())
+
+            missionOwner = "zhu"
+            missionFlowPath = "/home/spark/FlowGraph/"+missionOwner+"_"+req["taskName"]+".txt"
+            mission = Mission(missionName=req["taskName"], missionOwner=missionOwner, missionStartDate=datetime.now(), missionFlowPath=missionFlowPath)
             mission.save()
             missionId = str(Mission.objects.get(missionName=req["taskName"]).id)
+
+            with open(missionFlowPath,"w") as f:
+                f.write(req)
 
             print req
             File = []
@@ -133,6 +140,7 @@ def scheduler(request):
             status = SpScheduler.run(req, paras)
             mission = Mission.objects.get(id=missionId)
             mission.missionStatus = 3
+            mission.missionEndDate = datetime.now()
             mission.save()
             dict = status
 
@@ -141,6 +149,7 @@ def scheduler(request):
         info = "%s || %s" % (sys.exc_info()[0], sys.exc_info()[1])
         mission = Mission.objects.get(id=missionId)
         mission.missionStatus = 2
+        mission.missionEndDate = datetime.now()
         mission.save()
         print info
     dict["message"] = info
@@ -287,3 +296,74 @@ def processInformation(request):
     response["Access-Control-Max-Age"] = "1000"
     response["Access-Control-Allow-Headers"] = "*"
     return response
+
+@csrf_exempt
+def sendResultInformation(request):
+    dict = {}
+    info = 'OK'
+    try:
+        if request.method == 'GET':
+            mission = Mission.objects.get(missionName=request.GET['taskName'])
+            # print req
+            resultFile = []
+            file_objects = mission.resultfile_set.all()
+
+            for source in file_objects:
+                obj = {}
+                obj["id"] = str(source.id)
+                obj["label"] = source.resultName
+                resultFile.append(obj)
+
+            dict = resultFile
+
+    except:
+        import sys
+        info = "%s || %s" % (sys.exc_info()[0], sys.exc_info()[1])
+        dict["message"] = info
+        dict["createTime"] = str(time.ctime())
+
+    response = HttpResponse(json.dumps(dict), content_type="application/json")
+    response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Methods"] = "POST,GET"
+    response["Access-Control-Max-Age"] = "1000"
+    response["Access-Control-Allow-Headers"] = "*"
+    return response
+
+@csrf_exempt
+def showResult(request):
+    dict = {}
+    info = 'OK'
+    try:
+        if request.method == 'GET':
+            mission = Mission.objects.get(missionName=request.GET['taskName'])
+            # print req
+            resultPath = mission.resultfile_set.get(resultName=request.GET['resultName']).resultPath
+            resultdata = readFile(resultPath)
+
+            dict = resultdata
+
+    except:
+        import sys
+        info = "%s || %s" % (sys.exc_info()[0], sys.exc_info()[1])
+        dict["message"] = info
+        dict["createTime"] = str(time.ctime())
+
+    response = HttpResponse(json.dumps(dict), content_type="application/json")
+    response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Methods"] = "POST,GET"
+    response["Access-Control-Max-Age"] = "1000"
+    response["Access-Control-Allow-Headers"] = "*"
+    return response
+
+@csrf_exempt
+def receive(request):
+    if request.method == "POST":
+        ag = Algorithm(request.POST, request.FILES)
+        if ag.is_valid():
+            algorithm_name = ag.cleaned_data['username']
+            algorithm_text = ag.cleaned_data['algorithm_text']
+            a=Algorithm(algorithm_name=algorithm_name,algorithm_text=algorithm_text)
+            a.save()
+            return HttpResponse('upload ok!')
+        return HttpResponse("algorithm_name is invalid")
+    return HttpResponse("error")
