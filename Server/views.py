@@ -370,27 +370,28 @@ def receive(request):
     info = ""
     jarPath = "/home/spark/JAR/"
     if request.method == "POST":
-        ag = Algorithm(request.POST, request.FILES)
-        if ag.is_valid():
+        body = json.loads(request.body)
+        req = byteify(body)
+        algorithm_save = request.FILES.get("fname", None)
+        if algorithm_save:
             ags = Algorithm.objects.all()
             id = []
             for i in ags:
                 id.append(int(i.algorithmID))
             algorithm_id = str(max(id) + 1)
-            algorithm_name = ag.cleaned_data['algorithmName']
-            algorithm_tags = ag.cleaned_data['tags']
-            algorithm_jarPath = jarPath + ag.cleaned_data['jarName']
-            algorithm_className = ag.cleaned_data['className']
-            algorithm_inputNumber = ag.cleaned_data['inputNumber']
-            algorithm_outputNumber = ag.cleaned_data['outputNumber']
-            algorithm_inputSort = ag.cleaned_data['inputSort']
-            algorithm_text = ag.cleaned_data['description']
-            algorithm_save = ag.cleaned_data['jarFile']
+            algorithm_name = req['algorithmName']
+            algorithm_tags = req['tags']
+            algorithm_jarPath = jarPath + algorithm_save.name
+            algorithm_className = req['className']
+            algorithm_inputNumber = req['inputNumber']
+            algorithm_outputNumber = req['outputNumber']
+            algorithm_inputSort = req['inputSort']
+            algorithm_text = req['description']
             a=Algorithm(algorithm_name=algorithm_name, algorithmID=algorithm_id, tags=algorithm_tags, description=algorithm_text,
                         className=algorithm_className, jarPath=algorithm_jarPath, inputNumber=algorithm_inputNumber,
                         outputNumber=algorithm_outputNumber, inputSort=algorithm_inputSort, savePath=algorithm_save)
             a.save()
-            for para in ag.cleaned_data['parameters']:
+            for para in req['parameters']:
                 algorithmpara = AlgorithmParameters(paraName=para['label'], paraTags=para['tags'],
                                                     valType=para['type'], val=para['val'],
                                                     description=para['description'],
@@ -459,6 +460,38 @@ def recovery(request):
         info = "%s || %s" % (sys.exc_info()[0], sys.exc_info()[1])
     dict["message"] = info
     dict["createTime"] = str(time.ctime())
+    response = HttpResponse(json.dumps(dict), content_type="application/json")
+    response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Methods"] = "POST,GET"
+    response["Access-Control-Max-Age"] = "1000"
+    response["Access-Control-Allow-Headers"] = "*"
+    return response
+
+@csrf_exempt
+def receiveFile(request):
+    dict = {}
+    info = ""
+    if request.method == "POST":
+        print request.method
+        File = request.FILES.get("fname", None)
+        print File.name
+        # import os
+        # destination = open(os.path.join("/home/spark/TEMP/", File.name), 'wb+')
+
+        if File:
+            files = file.objects.all()
+            id = []
+            for i in files:
+                id.append(int(i.fileID))
+            fileid = str(max(id) + 1)
+            f = file(fileID=fileid, fileName=File.name, savePath=File)
+            f.save()
+            info = 'upload ok!'
+        else:
+            info = "algorithm_name is invalid"
+    else:
+        info = "error"
+    dict["message"] = info
     response = HttpResponse(json.dumps(dict), content_type="application/json")
     response["Access-Control-Allow-Origin"] = "*"
     response["Access-Control-Allow-Methods"] = "POST,GET"

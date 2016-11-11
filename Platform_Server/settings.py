@@ -132,4 +132,4 @@ STATIC_URL = '/static/'
 
 CORS_ORIGIN_ALLOW_ALL = True
 
-MEDIA_ROOT = "/home/spark"
+MEDIA_ROOT = "/home/spark/"

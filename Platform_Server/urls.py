@@ -26,5 +26,6 @@ urlpatterns = [
     url(r'^sendresultinformation/$', views.sendResultInformation),
     url(r'^visualization/$', views.showResult),
     url(r'^redraw/$', views.recovery),
-    url(r'^get_history/$', views.diaplay)
+    url(r'^get_history/$', views.diaplay),
+    url(r'^uploadfile/$', views.receiveFile)
 ]
