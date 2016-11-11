@@ -14,6 +14,7 @@ class Algorithm(models.Model):
     outputNumber = models.IntegerField()
     inputSort = models.CharField(max_length=100)
     description = models.CharField(max_length=100, default="")
+    savePath = models.FileField(upload_to="/JAE/")
 
 class AlgorithmParameters(models.Model):
     paraName = models.CharField(max_length=20)
@@ -33,7 +34,7 @@ class file(models.Model):
     filePath = models.CharField(max_length=100)
 
 class Mission(models.Model):
-    missionName = models.CharField(max_length=50)
+    missionName = models.CharField(max_length=50, unique=True)
     missionOwner = models.CharField(max_length=50)
     missionStartDate = models.DateTimeField(default=None)
     missionEndDate = models.DateTimeField(default=None)
@@ -42,6 +43,7 @@ class Mission(models.Model):
 
 class ResultFile(models.Model):
     resultName = models.CharField(max_length=50)
+    resultType = models.CharField(max_length=10)
     resultPath = models.CharField(max_length=100)
     missionId = models.ForeignKey(Mission, null=True)
 

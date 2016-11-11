@@ -34,14 +34,16 @@ def scheduler(request):
             body = json.loads(request.body)
             req = byteify(body)
 
-            missionOwner = "zhu"
-            missionFlowPath = "/home/spark/FlowGraph/"+missionOwner+"_"+req["taskName"]+".txt"
-            mission = Mission(missionName=req["taskName"], missionOwner=missionOwner, missionStartDate=datetime.now(), missionFlowPath=missionFlowPath)
+            mission_Owner = "zhu"
+            mission_FlowPath = "/home/spark/FlowGraph/"+mission_Owner+"_"+req["taskName"]+".txt"
+            print req["taskName"]
+            mission = Mission(missionName=req["taskName"], missionOwner=mission_Owner, missionStartDate=datetime.now(), missionEndDate=datetime.now(), missionFlowPath=mission_FlowPath)
             mission.save()
+            print req["taskName"]
             missionId = str(Mission.objects.get(missionName=req["taskName"]).id)
 
-            with open(missionFlowPath,"w") as f:
-                f.write(req)
+            with open(mission_FlowPath,"w") as f:
+                f.write(json.dumps(req))
 
             print req
             File = []
@@ -152,8 +154,8 @@ def scheduler(request):
         mission.missionEndDate = datetime.now()
         mission.save()
         print info
-    dict["message"] = info
-    dict["createTime"] = str(time.ctime())
+        dict["message"] = info
+        dict["createTime"] = str(time.ctime())
 
     response = HttpResponse(json.dumps(dict), content_type="application/json")
     response["Access-Control-Allow-Origin"] = "*"
@@ -357,6 +359,8 @@ def showResult(request):
 
 @csrf_exempt
 def receive(request):
+    dict = {}
+    info = ""
     jarPath = "/home/spark/JAR/"
     if request.method == "POST":
         ag = Algorithm(request.POST, request.FILES)
@@ -374,36 +378,23 @@ def receive(request):
             algorithm_outputNumber = ag.cleaned_data['outputNumber']
             algorithm_inputSort = ag.cleaned_data['inputSort']
             algorithm_text = ag.cleaned_data['description']
+            algorithm_save = ag.cleaned_data['jarFile']
             a=Algorithm(algorithm_name=algorithm_name, algorithmID=algorithm_id, tags=algorithm_tags, description=algorithm_text,
                         className=algorithm_className, jarPath=algorithm_jarPath, inputNumber=algorithm_inputNumber,
-                        outputNumber=algorithm_outputNumber, inputSort=algorithm_inputSort)
+                        outputNumber=algorithm_outputNumber, inputSort=algorithm_inputSort, savePath=algorithm_save)
             a.save()
-            return HttpResponse('upload ok!')
-        return HttpResponse("algorithm_name is invalid")
-    return HttpResponse("error")
-
-
-def diaplay(request):
-    dict = {}
-    info = 'OK'
-    try:
-        if request.method == 'GET':
-            missionName=request.GET['taskName']
-            mission= Mission.objects.get(missionName=missionName)
-            missionOwner =mission.missionOwner
-            missionStartDate = mission.missionStartDate
-            missionEndDate = mission.missionEndDate
-            missionStatus = mission.missionStatus
-            dict["missionName"] = missionName
-            dict["missionOwner"] = missionOwner
-            dict["missionStartDate"] = missionStartDate
-            dict["missionEndDate"] = missionEndDate
-            dict["missionStatus"] = missionStatus
-    except:
-        import sys
-        info = "%s || %s" % (sys.exc_info()[0], sys.exc_info()[1])
+            for para in ag.cleaned_data['parameters']:
+                algorithmpara = AlgorithmParameters(paraName=para['label'], paraTags=para['tags'],
+                                                    valType=para['type'], val=para['val'],
+                                                    description=para['description'],
+                                                    algorithm=a)
+                algorithmpara.save()
+            info = 'upload ok!'
+        else:
+            info = "algorithm_name is invalid"
+    else:
+        info = "error"
     dict["message"] = info
-    dict["createTime"] = str(time.ctime())
     response = HttpResponse(json.dumps(dict), content_type="application/json")
     response["Access-Control-Allow-Origin"] = "*"
     response["Access-Control-Allow-Methods"] = "POST,GET"
@@ -411,6 +402,40 @@ def diaplay(request):
     response["Access-Control-Allow-Headers"] = "*"
     return response
 
+@csrf_exempt
+def diaplay(request):
+    dict = []
+    info = 'OK'
+    try:
+        if request.method == 'GET':
+            missions= Mission.objects.all()
+            for mission in missions:
+                obj = {}
+                missionOwner =mission.missionOwner
+                missionStartDate = mission.missionStartDate
+                missionEndDate = mission.missionEndDate
+                missionStatus = mission.missionStatus
+                obj["id"] = str(mission.id)
+                obj["name"] = mission.missionName
+                obj["missionOwner"] = missionOwner
+                obj["submit_time"] = str(missionStartDate)
+                obj["finish_time"] = str(missionEndDate)
+                obj["missionStatus"] = missionStatus
+                dict.append(obj)
+            print dict
+    except:
+        import sys
+        info = "%s || %s" % (sys.exc_info()[0], sys.exc_info()[1])
+        dict["message"] = info
+        dict["createTime"] = str(time.ctime())
+    response = HttpResponse(json.dumps(dict), content_type="application/json")
+    response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Methods"] = "POST,GET"
+    response["Access-Control-Max-Age"] = "1000"
+    response["Access-Control-Allow-Headers"] = "*"
+    return response
+
+@csrf_exempt
 def recovery(request):
     dict = {}
     info = 'OK'

@@ -24,5 +24,7 @@ urlpatterns = [
     url(r'^sendinformation/$', views.sendSparkInformation),
     url(r'^processinformation/$', views.processInformation),
     url(r'^sendresultinformation/$', views.sendResultInformation),
-    url(r'^visualization/$', views.showResult)
+    url(r'^visualization/$', views.showResult),
+    url(r'^redraw/$', views.recovery),
+    url(r'^get_history/$', views.diaplay)
 ]
