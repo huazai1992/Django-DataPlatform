@@ -28,12 +28,14 @@ def scheduler(request):
     dict = {}
     info = 'OK'
     missionId = -1
+    missionName = ""
     try:
         print request.method
         if request.method == 'POST':
             body = json.loads(request.body)
             req = byteify(body)
 
+            missionName = req["taskName"]
             mission_Owner = "zhu"
             mission_FlowPath = "/home/spark/FlowGraph/"+mission_Owner+"_"+req["taskName"]+".txt"
             print req["taskName"]
@@ -149,10 +151,15 @@ def scheduler(request):
     except:
         import sys
         info = "%s || %s" % (sys.exc_info()[0], sys.exc_info()[1])
-        mission = Mission.objects.get(id=missionId)
-        mission.missionStatus = 2
-        mission.missionEndDate = datetime.now()
-        mission.save()
+        if info.find("1062") == -1:
+            mission = None
+            if missionId != -1:
+                mission = Mission.objects.get(id=missionId)
+            else:
+                mission = Mission.objects.get(missionName=missionName)
+            mission.missionStatus = 2
+            mission.missionEndDate = datetime.now()
+            mission.save()
         print info
         dict["message"] = info
         dict["createTime"] = str(time.ctime())
